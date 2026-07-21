@@ -1,0 +1,52 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.gbif.datagen</groupId>
+    <artifactId>dwc-dp-datagen-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>datagen-dwcdp</artifactId>
+  <packaging>jar</packaging>
+
+  <properties>
+    <!-- Pin the dwc-dp-schemas coordinate here so it's a one-line bump when a new bundle ships. -->
+    <dwc-dp-schemas.version>0.0.2</dwc-dp-schemas.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.gbif.datagen</groupId>
+      <artifactId>datagen-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Ships only schemas/bundles.json + schemas/{version}/... as classpath resources — no
+         Java classes. DwcDpSchemaBundle reads it at runtime; there is no codegen step. -->
+    <dependency>
+      <groupId>org.gbif</groupId>
+      <artifactId>dwc-dp-schemas</artifactId>
+      <version>${dwc-dp-schemas.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

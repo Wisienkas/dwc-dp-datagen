@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "$id": "https://dwc-prerelease.rs.tdwg.org/dwc-dp/1.0_TEST/dwc-dp-profile.json",
+  "title": "Darwin Core Data Package (DwC-DP) profile (test fixture)",
+  "type": "object",
+  "$defs": {
+    "dwc-dp-resource-names": {
+      "enum": ["event", "occurrence", "material"]
+    }
+  }
+}

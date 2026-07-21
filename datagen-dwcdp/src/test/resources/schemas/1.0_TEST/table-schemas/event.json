@@ -1,0 +1,23 @@
+{
+  "fields": [
+    {"name": "event_pk", "type": "string", "title": "Event (Primary Key)",
+     "constraints": {"required": true, "unique": true},
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID"},
+    {"name": "eventID", "type": "string", "title": "Event ID",
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID"},
+    {"name": "parentEvent_fk", "type": "string", "title": "Parent Event (Foreign Key)"},
+    {"name": "eventDate", "type": "string", "title": "Event Date",
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventDate"},
+    {"name": "decimalLatitude", "type": "number", "title": "Decimal Latitude",
+     "constraints": {"minimum": -90, "maximum": 90},
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/decimalLatitude"},
+    {"name": "decimalLongitude", "type": "number", "title": "Decimal Longitude",
+     "constraints": {"minimum": -180, "maximum": 180},
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/decimalLongitude"}
+  ],
+  "primaryKey": "event_pk",
+  "foreignKeys": [
+    {"fields": "parentEvent_fk", "predicate": "happened during",
+     "reference": {"resource": "", "fields": "event_pk"}}
+  ]
+}

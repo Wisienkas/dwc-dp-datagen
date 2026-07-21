@@ -1,0 +1,5 @@
+{
+  "bundles": [
+    { "version": "1.0_TEST", "index": "1.0_TEST/index.json", "profile": "1.0_TEST/dwc-dp-profile.json" }
+  ]
+}

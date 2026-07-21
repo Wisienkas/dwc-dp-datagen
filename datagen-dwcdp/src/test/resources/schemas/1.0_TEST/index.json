@@ -1,0 +1,31 @@
+{
+  "identifier": "http://rs.tdwg.org/dwc/dwc-dp",
+  "url": "index.json",
+  "name": "dwc-dp",
+  "version": "1.0_TEST",
+  "title": "Darwin Core Data Package (test fixture)",
+  "isLatest": true,
+  "tableSchemas": [
+    {
+      "identifier": "http://rs.tdwg.org/dwc/dwc-dp/event",
+      "url": "table-schemas/event.json",
+      "name": "event",
+      "title": "Event",
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Event"
+    },
+    {
+      "identifier": "http://rs.tdwg.org/dwc/dwc-dp/occurrence",
+      "url": "table-schemas/occurrence.json",
+      "name": "occurrence",
+      "title": "Occurrence",
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Occurrence"
+    },
+    {
+      "identifier": "http://rs.tdwg.org/dwc/dwc-dp/material",
+      "url": "table-schemas/material.json",
+      "name": "material",
+      "title": "Material",
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/MaterialEntity"
+    }
+  ]
+}

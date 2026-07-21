@@ -1,0 +1,17 @@
+{
+  "fields": [
+    {"name": "occurrence_pk", "type": "string", "title": "Occurrence (Primary Key)",
+     "constraints": {"required": true, "unique": true},
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/occurrenceID"},
+    {"name": "occurrenceID", "type": "string", "title": "Occurrence ID",
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/occurrenceID"},
+    {"name": "event_fk", "type": "string", "title": "Event (Foreign Key)"},
+    {"name": "scientificName", "type": "string", "title": "Scientific Name",
+     "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/scientificName"}
+  ],
+  "primaryKey": "occurrence_pk",
+  "foreignKeys": [
+    {"fields": "event_fk", "predicate": "happened during",
+     "reference": {"resource": "event", "fields": "event_pk"}}
+  ]
+}

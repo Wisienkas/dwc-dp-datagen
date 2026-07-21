@@ -1,0 +1,144 @@
+# Taskfile.dist.yaml
+#
+# Checked-in, shareable task definitions for generating DwC-DP test fixtures via the
+# datagen-recipes shaded runner jar. Copy this to Taskfile.yml (or add
+# `includes: {recipes: Taskfile.dist.yaml}` to your own Taskfile.yml) to use it — kept as
+# ".dist" so local overrides don't need to touch the checked-in file.
+#
+# Usage:
+#   task --list              # see all recipes with their row counts/domains
+#   task build                # (re)build the shaded runner jar
+#   task bird-banding          # run one recipe with defaults
+#   task all                   # run all 5 recipes
+#   task bird-banding SEED=7 OUT=/tmp/fixtures BUNDLE=1.0_DEV
+#
+# Each recipe's main class takes [outputDir] [seed] [bundleVersion] — this Taskfile just wires
+# those up to overridable vars so you don't have to remember the java -cp invocation.
+
+version: '3'
+
+vars:
+  # Auto-detected from whatever shaded jar exists under datagen-recipes/target — avoids
+  # hardcoding a version number that will drift every release. Override with JAR=path/to.jar
+  # if you have more than one shaded jar lying around and `ls` picks the wrong one.
+  JAR:
+    sh: ls datagen-recipes/target/*-runner.jar 2>/dev/null | head -1
+  OUT: '{{.OUT | default "target/datagen-output"}}'
+  SEED: '{{.SEED | default "42"}}'
+  BUNDLE: '{{.BUNDLE | default "1.0_DEV"}}'
+
+tasks:
+
+  default:
+    desc: List all available recipes (same as `task --list`)
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the shaded datagen-recipes runner jar (mvn package -pl datagen-recipes -am)
+    summary: |
+      Runs `mvn -pl datagen-recipes -am package` so the runner jar under
+      datagen-recipes/target/*-runner.jar exists and is current. Run this first, and again
+      any time you change a recipe or a datagen-core/datagen-dwcdp class it depends on —
+      the JAR var below is resolved fresh on every invocation, so a stale jar from an old
+      build won't be silently reused once a new one is built.
+    cmds:
+      - mvn -pl datagen-recipes -am package
+
+  check-jar:
+    internal: true
+    silent: true
+    status:
+      - test -n "{{.JAR}}"
+    cmds:
+      - 'echo "No *-runner.jar found under datagen-recipes/target — run: task build" && exit 1'
+
+  bird-banding:
+    desc: "Bird banding (~66k rows): event, organism, occurrence — recapture-linked observations"
+    summary: |
+      Ornithology monitoring domain. event -> occurrence, with ~30% of occurrences linking
+      back to a previously banded individual via organism_fk (recaptures); the rest are
+      first-captures with no organism link at all.
+
+      Vars: OUT (default target/datagen-output/bird-banding), SEED (default 42),
+      BUNDLE (default 1.0_DEV).
+    deps: [check-jar]
+    cmds:
+      - java -cp "{{.JAR}}" org.gbif.datagen.recipes.BirdBandingRecipe "{{.OUT}}/bird-banding" {{.SEED}} {{.BUNDLE}}
+
+  herbarium-specimen:
+    desc: "Herbarium specimens (~65k rows): event, occurrence, material, material-identifier"
+    summary: |
+      Botanical collection domain. Exercises the weak-reference join specifically —
+      material.derivedFromOccurrenceID -> occurrence.occurrenceID (a natural key, not a
+      surrogate _pk) — with ~15% of specimens deliberately unlinked (accessioned from
+      exchange, no field-collection record; schema-valid since the weak FK is unenforced).
+
+      Vars: OUT (default target/datagen-output/herbarium-specimen), SEED (default 42),
+      BUNDLE (default 1.0_DEV).
+    deps: [check-jar]
+    cmds:
+      - java -cp "{{.JAR}}" org.gbif.datagen.recipes.HerbariumSpecimenRecipe "{{.OUT}}/herbarium-specimen" {{.SEED}} {{.BUNDLE}}
+
+  citizen-science-photo:
+    desc: "Citizen science photos (~95k rows): event, occurrence, media, occurrence-media, media-identifier"
+    summary: |
+      iNaturalist-style photo observation domain. Exercises the media joins specifically —
+      occurrence-media is a genuine many-to-many (the same photo can illustrate more than
+      one sighting from a session), and media-identifier has uneven 0/1/2 cardinality per
+      photo rather than a fixed 1:1 shape.
+
+      Vars: OUT (default target/datagen-output/citizen-science-photo), SEED (default 42),
+      BUNDLE (default 1.0_DEV).
+    deps: [check-jar]
+    cmds:
+      - java -cp "{{.JAR}}" org.gbif.datagen.recipes.CitizenSciencePhotoRecipe "{{.OUT}}/citizen-science-photo" {{.SEED}} {{.BUNDLE}}
+
+  humboldt-survey:
+    desc: "Standardized surveys (~44k rows): event, survey, survey-target, occurrence, organism"
+    summary: |
+      The Humboldt extension domain: survey/survey-target describe standardized sampling
+      effort (what was being looked for, so absence can be inferred, not just presence).
+      ~65% of occurrences carry survey_fk (part of a standardized survey); the rest are
+      opportunistic records from the same events — the plain-vs-enriched distinction the
+      Humboldt tables exist to make queryable.
+
+      Vars: OUT (default target/datagen-output/humboldt-survey), SEED (default 42),
+      BUNDLE (default 1.0_DEV).
+    deps: [check-jar]
+    cmds:
+      - java -cp "{{.JAR}}" org.gbif.datagen.recipes.HumboldtSurveyRecipe "{{.OUT}}/humboldt-survey" {{.SEED}} {{.BUNDLE}}
+
+  museum-digitization:
+    desc: "Museum digitization, full graph (~102k rows): event, organism, occurrence, occurrence-identifier, material, material-identifier, media, occurrence-media, media-identifier"
+    summary: |
+      The kitchen sink — combines observations, specimens, and photographs in one dataset,
+      exercising every join covered by the other four recipes at once: strong FKs, the weak
+      material<-occurrence relationship, and both identifier/media joins. Run this one when
+      you want a single dataset that stresses the whole pipeline rather than five targeted runs.
+
+      Vars: OUT (default target/datagen-output/museum-digitization), SEED (default 42),
+      BUNDLE (default 1.0_DEV).
+    deps: [check-jar]
+    cmds:
+      - java -cp "{{.JAR}}" org.gbif.datagen.recipes.MuseumDigitizationRecipe "{{.OUT}}/museum-digitization" {{.SEED}} {{.BUNDLE}}
+
+  all:
+    desc: Run all 5 recipes sequentially into OUT (default target/datagen-output)
+    summary: |
+      Runs every recipe above with the same SEED/BUNDLE/OUT, each into its own subdirectory
+      of OUT. Useful for a full pipeline smoke test in one command; for iterating on a single
+      recipe while debugging a field-name mismatch, run that recipe's task directly instead —
+      much faster feedback loop than regenerating all five every time.
+    cmds:
+      - task: bird-banding
+      - task: herbarium-specimen
+      - task: citizen-science-photo
+      - task: humboldt-survey
+      - task: museum-digitization
+
+  clean:
+    desc: Remove all generated output under OUT (default target/datagen-output)
+    cmds:
+      - rm -rf {{.OUT}}

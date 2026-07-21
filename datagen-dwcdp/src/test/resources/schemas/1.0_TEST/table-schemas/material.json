@@ -1,0 +1,16 @@
+{
+  "fields": [
+    {"name": "material_pk", "type": "string", "title": "Material (Primary Key)",
+      "constraints": {"required": true, "unique": true},
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/materialEntityID"},
+    {"name": "materialEntityID", "type": "string", "title": "Material Entity ID",
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/materialEntityID"},
+    {"name": "derivedFromOccurrenceID", "type": "string", "title": "Derived From Occurrence (weak)",
+      "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/occurrenceID"}
+  ],
+  "primaryKey": "material_pk",
+  "weakForeignKeys": [
+    {"fields": "derivedFromOccurrenceID", "predicate": "derived from",
+      "reference": {"resource": "occurrence", "fields": "occurrenceID"}}
+  ]
+}
