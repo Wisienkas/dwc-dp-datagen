@@ -13,29 +13,39 @@ import org.gbif.datagen.spec.Key;
  *  media-identifier joins: photos are reused across sightings (many-to-many, not 1:1), and a
  *  media row can carry zero, one, or several external identifiers.
  *
+ *  <p>Also carries a light occurrence-assertion / protocol pairing so
+ *  {@code AssertionExtensionBuilder}'s protocol-resolution join (assertionProtocol_fk ->
+ *  protocol.protocolDescription -> measurementMethod) gets exercised by this dataset too, not
+ *  just its no-protocol-table fallback (renaming the raw FK straight to measurementMethod).
+ *
  *  <pre>
- *                event (8,000)
- *               observation sessions
- *                      │
- *                      │ event_fk  (zipf 1.4, max 15)
- *                      ▼
- *              occurrence (~48,000)
- *               individual sightings
- *                      │
- *                      │ occurrence_fk  (uniform 0-2 photos)
- *                      ▼
- *           occurrence-media (~48,000)
- *              photo-to-sighting links
- *                      │
- *                      │ media_fk  (reused across sightings)
- *                      ▼
- *                media (~15,000)
- *               uploaded photographs
- *                      │
- *                      │ media_fk  (uniform 0-2)
- *                      ▼
- *         media-identifier (~15,000)
- *          external photo-service IDs
+ *  event (8,000)
+ *   observation sessions
+ *          │
+ *          │ event_fk  (zipf 1.4, max 15)
+ *          ▼
+ *  occurrence (~48,000)
+ *   individual sightings
+ *      ┌────┴─────────────────┐
+ *      │ occurrence_fk        │ occurrence_fk
+ *      │ (uniform 0-2 photos) │ (uniform 0-2 assertions)
+ *      ▼                      ▼
+ *  occurrence-media       occurrence-assertion (~48,000)
+ *  (~48,000)                body-length measurements
+ *   photo-to-sighting            │
+ *   links                        │ assertionProtocol_fk (80% resolved, 20% null)
+ *      │                         ▼
+ *      │ media_fk            protocol (4)
+ *      │ (reused across       measurement methods
+ *      │  sightings)
+ *      ▼
+ *  media (~15,000)
+ *   uploaded photographs
+ *      │
+ *      │ media_fk  (uniform 0-2)
+ *      ▼
+ *  media-identifier (~15,000)
+ *   external photo-service IDs
  *  </pre>
  *
  *  */
@@ -67,7 +77,7 @@ public final class CitizenSciencePhotoRecipe {
 
       .resource("media")
       .allFields()
-      .rows(9_000)
+      .rows(15_000)
       .field("mediaType", Gen.constant("StillImage"))
       .field("format", Gen.weighted("image/jpeg", 0.85, "image/png", 0.15))
 
@@ -83,6 +93,35 @@ public final class CitizenSciencePhotoRecipe {
       .per("media", Dist.uniform(0, 2))
       .field("identifierType", Gen.constant("URI"))
       .field("identifier", Gen.uuid().map(id -> "https://collections.example.org/media/" + id)) // museum
+
+      .resource("protocol")
+      .allFields()
+      .rows(4)
+      .field("protocolType", Gen.constant("measurement"))
+      .field("protocolName", Gen.sample(
+        "iNaturalist community size-estimate protocol",
+        "Photo scale-bar measurement",
+        "Crowd-sourced identification confidence score",
+        "EXIF-derived body length estimate"))
+
+      .resource("occurrence-assertion")
+      .allFields()
+      .per("occurrence", Dist.uniform(0, 2))
+      // assertionID is uniq but NOT required — under .allFields() the schema default for a
+      // non-required-unique field is a repeated deterministic placeholder, which would trip
+      // the uniqueness constraint check the moment more than one assertion row exists. Needs
+      // an explicit generator.
+      .field("assertionID", Gen.uuid())
+      .field("assertionType", Gen.constant("estimated body length"))
+      .field("assertionUnit", Gen.constant("mm"))
+      // Gen.between(min, max, decimals) always returns a Double, even at decimals=0 (the
+      // rounding step promotes via double division) — .map(String::valueOf) on that gives
+      // "205.0", not "205". Round explicitly instead.
+      .field("assertionValue", Gen.between(2, 400).map(v -> String.valueOf(Math.round(v.doubleValue()))))
+      // Left with a nullChance so both branches of AssertionExtensionBuilder's protocol join
+      // get real data: resolved (protocol present -> measurementMethod populated) and the
+      // dangling case (null FK -> measurementMethod stays null after the left join).
+      .field("assertionProtocol_fk", Gen.lookup("protocol", "protocol_pk").nullChance(0.2))
       .build();
   }
 

@@ -1,4 +1,3 @@
-// datagen-recipes/src/main/java/org/gbif/datagen/recipes/MuseumDigitizationRecipe.java
 package org.gbif.datagen.recipes;
 
 import org.gbif.datagen.dwcdp.DwcGen;
