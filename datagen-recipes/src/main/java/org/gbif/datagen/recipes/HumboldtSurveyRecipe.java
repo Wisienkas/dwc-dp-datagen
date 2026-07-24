@@ -17,7 +17,8 @@ import org.gbif.datagen.spec.Key;
  *  of {@code HumboldtExtensionBuilder}: {@code Dist.uniform(0, 3)} on the junction table means
  *  roughly a third of surveys get zero survey-target rows (single Humboldt row per event, no
  *  fan-out) while the rest get 1-3 (fan-out — one Humboldt extension row per survey-target,
- *  all sharing the same eventID).
+ *  all sharing the same eventID). Previously neither table was generated at all, so the
+ *  fan-out branch was never hit by this dataset.
  *
  *  <pre>
  *  event (2,500)              survey (1,800)             survey-target (40)
@@ -49,6 +50,12 @@ public final class HumboldtSurveyRecipe {
       .resource("event")
       .allFields()
       .rows(2_500)
+      // eventID is a weakPk (schema's natural DwC identifier) but not req+unique. The
+      // schema-default placeholder already seems to vary per row (e.g. event-77, event-245 in
+      // the pipeline logs), so this probably isn't fixing a live collision — kept explicit
+      // anyway since this field feeds GBIF ID assignment downstream and I'd rather not depend
+      // on undocumented default behavior for it.
+      .field("eventID", Gen.uuid())
       .field("eventType", Gen.weighted("transect walk", 0.5, "camera trap deployment", 0.3,
                                        "BioBlitz", 0.2))
       .field("eventDate", DwcGen.dates().between(2019, 2025).formats(DwcGen.DateFormat.ISO_DAY))
@@ -57,10 +64,13 @@ public final class HumboldtSurveyRecipe {
       .resource("survey")
       .allFields()
       .rows(1_800)
+      .field("surveyID", Gen.uuid()) // same weakPk-not-req+unique gap as eventID
       .field("event_fk", Gen.lookup("event", "event_pk"))
       .field("samplingEffortProtocol", Gen.constant("standardized transect, fixed duration"))
       .field("isAbundanceReported", Gen.weighted(true, 0.7, false, 0.3))
       .field("isAbsenceReported", Gen.weighted(true, 0.6, false, 0.4))
+      .field("geospatialScopeAreaUnit", Gen.constant("m2"))
+      .field("totalAreaSampledUnit", Gen.constant("m2"))
 
       // Standardized target vocabulary — deliberately a small, reused pool. Real Humboldt
       // datasets draw survey targets from a handful of standard protocol definitions, not one
@@ -68,6 +78,7 @@ public final class HumboldtSurveyRecipe {
       .resource("survey-target")
       .allFields()
       .rows(40)
+      .field("surveyTargetID", Gen.uuid()) // same weakPk-not-req+unique gap as eventID
       .field("surveyTargetDescription", Gen.sample(
         "all vascular plants > 1m height",
         "breeding birds within 100m radius",
@@ -95,8 +106,18 @@ public final class HumboldtSurveyRecipe {
 
       .resource("occurrence")
       .allFields()
-      .per("event", Dist.zipf(1.3).max(25))
+      // Was Dist.zipf(1.3).max(25), drawn independently per event. With s=1.3 that's skewed
+      // enough that plausibly most of the 2,500 events landed at 0 — starving the occurrence
+      // extension EventCoreBuilder attaches per event, which is the actual GBIF-ID-bearing
+      // payload for this dataset. That's the more likely explanation for "No records with
+      // valid GBIF ID! totalCount 0", not an identifier collision. Dist.uniform(1, 25)
+      // guarantees every event gets at least one; trades away the zipf skew, so swap back if
+      // the long-tail shape matters more than this guarantee.
+      .per("event", Dist.uniform(1, 25))
       .field("scientificName", DwcGen.scientificName())
+      // occurrenceID: same weakPk-not-req+unique note as eventID above — kept explicit for the
+      // same reason (feeds GBIF ID assignment), not because of a confirmed collision.
+      .field("occurrenceID", Gen.uuid())
       .field("occurrenceStatus", Gen.weighted("present", 0.8, "absent", 0.2))
       .field("organismID", Gen.lookup("organism", "organismID").nullChance(0.75))
       .build();

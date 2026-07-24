@@ -271,7 +271,7 @@ class BlueprintTest {
         .build();
     GeneratedPackage pkg = spec.generate(1);
     Path dir = Files.createTempDirectory("datagen-test-csv");
-    pkg.writeTo(dir, new MapDescriptorSerializer());
+    pkg.writeTo(dir, new MapDescriptorSerializer(), "datagen-test-csv");
     String csv = Files.readString(dir.resolve("widget.csv"));
     assertTrue(csv.contains("\"has, a comma and a \"\"quote\"\"\""), "expected RFC4180 quoting, got: " + csv);
   }
@@ -307,7 +307,7 @@ class BlueprintTest {
   private Map<String, Object> descriptorOf(GeneratedPackage pkg) {
     try {
       Path dir = Files.createTempDirectory("datagen-test-descriptor");
-      pkg.writeTo(dir, new MapDescriptorSerializer());
+      pkg.writeTo(dir, new MapDescriptorSerializer(),  "datagen-test-descriptor");
       return JsonSupport.readObject(Files.readString(dir.resolve("datapackage.json")));
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -351,7 +351,7 @@ class BlueprintTest {
 
   private String writeAndRead(GeneratedPackage pkg) throws Exception {
     Path dir = Files.createTempDirectory("datagen-test-writeread");
-    pkg.writeTo(dir, new MapDescriptorSerializer());
+    pkg.writeTo(dir, new MapDescriptorSerializer(),  "datagen-test-writeread");
     StringBuilder sb = new StringBuilder();
     for (String resource : pkg.spec().generationOrder()) {
       sb.append(Files.readString(dir.resolve(resource + ".csv")));

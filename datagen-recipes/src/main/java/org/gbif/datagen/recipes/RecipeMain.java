@@ -33,6 +33,7 @@ final class RecipeMain {
     GeneratedPackage pkg = spec.generate(seed);
 
     Path written = new PackageWriter(new DwcDpDescriptorSerializer())
+      .name(defaultOutputDirName)
       .id("https://example.org/datagen/" + defaultOutputDirName)
       .created(Instant.now().toString())
       .write(pkg, outputDir);

@@ -25,8 +25,9 @@ import org.gbif.datagen.spec.ResourceSpec;
 public final class MapDescriptorSerializer implements DescriptorSerializer {
 
   @Override
-  public String serialize(DataPackageSpec spec, String id, String created) {
+  public String serialize(DataPackageSpec spec, String id, String name, String created) {
     Map<String, Object> root = new LinkedHashMap<>();
+    root.put("name", name);
     spec.profileUrl().ifPresent(url -> root.put("profile", url));
     root.put("id", id);
     root.put("created", created);

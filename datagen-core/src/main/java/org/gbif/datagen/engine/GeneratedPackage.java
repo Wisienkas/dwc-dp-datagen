@@ -3,6 +3,7 @@ package org.gbif.datagen.engine;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.gbif.datagen.gen.Row;
 import org.gbif.datagen.spec.DataPackageSpec;
@@ -25,7 +26,10 @@ public record GeneratedPackage(DataPackageSpec spec, Map<String, List<Row>> rows
   }
 
   /** Writes CSVs, {@code datapackage.json}, and a run metadata sidecar. */
-  public Path writeTo(Path directory, DescriptorSerializer descriptorSerializer) {
-    return new PackageWriter(descriptorSerializer).write(this, directory);
+  public Path writeTo(Path directory, DescriptorSerializer descriptorSerializer, String name) {
+    Objects.requireNonNull(directory, "Directory is null");
+    Objects.requireNonNull(descriptorSerializer, "DescriptorSerializer is null");
+    Objects.requireNonNull(name, "Name is null");
+    return new PackageWriter(descriptorSerializer).name(name).write(this, directory);
   }
 }

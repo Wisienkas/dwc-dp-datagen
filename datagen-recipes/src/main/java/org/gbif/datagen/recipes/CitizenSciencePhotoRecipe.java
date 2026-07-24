@@ -64,6 +64,10 @@ public final class CitizenSciencePhotoRecipe {
       .resource("event")
       .allFields()
       .rows(8_000)
+      // eventID is a weakPk but not req+unique. Kept explicit rather than relying on the
+      // schema-default placeholder, since this field feeds GBIF ID assignment downstream —
+      // not a confirmed collision, just not a field worth leaving to undocumented defaults.
+      .field("eventID", Gen.uuid())
       .field("eventType", Gen.constant("opportunistic observation"))
       .field("eventDate", DwcGen.dates().between(2020, 2026)
         .formats(DwcGen.DateFormat.ISO_DAY, DwcGen.DateFormat.ISO_DATETIME))
@@ -74,10 +78,16 @@ public final class CitizenSciencePhotoRecipe {
       .field("scientificName", DwcGen.scientificName())
       .field("recordedBy", DwcGen.personName())
       .field("occurrenceStatus", Gen.constant("present"))
+      // Same note as eventID — kept explicit since occurrenceID feeds GBIF ID assignment,
+      // not because of a confirmed collision.
+      .field("occurrenceID", Gen.uuid())
 
       .resource("media")
       .allFields()
+      // was 9_000 — didn't match the ~15,000 this class's own doc (and the reuse ratio the
+      // recipe is meant to demonstrate) claimed. Fixed to match.
       .rows(15_000)
+      .field("mediaID", Gen.uuid()) // same weakPk-not-req+unique gap as eventID
       .field("mediaType", Gen.constant("StillImage"))
       .field("format", Gen.weighted("image/jpeg", 0.85, "image/png", 0.15))
 
@@ -94,9 +104,12 @@ public final class CitizenSciencePhotoRecipe {
       .field("identifierType", Gen.constant("URI"))
       .field("identifier", Gen.uuid().map(id -> "https://collections.example.org/media/" + id)) // museum
 
+      // Small, standardized measurement-method vocabulary — real citizen-science pipelines
+      // resolve a handful of protocols, not one bespoke protocol per assertion.
       .resource("protocol")
       .allFields()
       .rows(4)
+      .field("protocolID", Gen.uuid()) // same weakPk-not-req+unique gap as eventID
       .field("protocolType", Gen.constant("measurement"))
       .field("protocolName", Gen.sample(
         "iNaturalist community size-estimate protocol",

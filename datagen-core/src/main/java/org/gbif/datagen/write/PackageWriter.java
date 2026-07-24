@@ -19,22 +19,28 @@ public final class PackageWriter {
 
   private final DescriptorSerializer descriptorSerializer;
   private String id = "https://example.org/dwc-dp-generated-dataset";
+  private String name;
   private String created = Instant.now().toString();
   private boolean writeRunMetadata = true;
 
-  /**
-   * @param descriptorSerializer required, not defaulted. A silent default here is the kind of
-   *     thing that goes unnoticed in a recipe: every field still round-trips, nothing looks
-   *     wrong, but the descriptor wasn't built from the real {@code org.gbif.dp.descriptor}
-   *     model. Forcing the choice at construction turns a silent correctness gap into a
-   *     compile-time decision.
-   */
   public PackageWriter(DescriptorSerializer descriptorSerializer) {
     this.descriptorSerializer = Objects.requireNonNull(descriptorSerializer, "descriptorSerializer");
   }
 
   public PackageWriter id(String id) {
     this.id = id;
+    return this;
+  }
+
+  /**
+   * Sets the descriptor's {@code name}. Required at {@link #write} — unlike {@code id}, which
+   * has an obviously-a-placeholder default, a missing {@code name} wouldn't fail or look wrong,
+   * it would just silently produce a descriptor without one. Frictionless requires {@code name}
+   * to be lowercase, with only alphanumerics, {@code -}, {@code .}, {@code _} — not validated
+   * here, but worth conforming to if the descriptor needs to pass strict validation downstream.
+   */
+  public PackageWriter name(String name) {
+    this.name = name;
     return this;
   }
 
@@ -50,6 +56,11 @@ public final class PackageWriter {
   }
 
   public Path write(GeneratedPackage pkg, Path directory) {
+    if (name == null) {
+      throw new IllegalStateException("PackageWriter.name(...) was never set. A datapackage.json"
+                                      + " without a name is a real gap most consumers require filled — set it explicitly"
+                                      + " rather than relying on a default, since there's no name that's correct by default.");
+    }
     try {
       Files.createDirectories(directory);
 
@@ -58,7 +69,7 @@ public final class PackageWriter {
                         pkg.rows(resource.name()));
       }
 
-      String descriptor = descriptorSerializer.serialize(pkg.spec(), id, created);
+      String descriptor = descriptorSerializer.serialize(pkg.spec(), id, name, created);
       Files.writeString(directory.resolve("datapackage.json"), descriptor, StandardCharsets.UTF_8);
 
       if (writeRunMetadata) {
@@ -74,6 +85,7 @@ public final class PackageWriter {
   private Map<String, Object> runMetadata(GeneratedPackage pkg) {
     Map<String, Object> meta = new LinkedHashMap<>();
     meta.put("bundle", pkg.spec().bundle().coordinate());
+    meta.put("name", name);
     meta.put("seed", pkg.seed());
     meta.put("generatedAt", created);
     Map<String, Object> counts = new LinkedHashMap<>();

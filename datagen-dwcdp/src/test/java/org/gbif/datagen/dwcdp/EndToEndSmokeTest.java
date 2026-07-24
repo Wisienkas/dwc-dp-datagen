@@ -76,7 +76,7 @@ public final class EndToEndSmokeTest {
       }
 
       Path dir = Files.createTempDirectory("datagen-e2e-smoke");
-      pkg.writeTo(dir, new MapDescriptorSerializer());
+      pkg.writeTo(dir, new MapDescriptorSerializer(),   "datagen-e2e-smoke");
       require(Files.exists(dir.resolve("event.csv")), "event.csv should exist");
       require(Files.exists(dir.resolve("occurrence.csv")), "occurrence.csv should exist");
       require(Files.exists(dir.resolve("datapackage.json")), "datapackage.json should exist");

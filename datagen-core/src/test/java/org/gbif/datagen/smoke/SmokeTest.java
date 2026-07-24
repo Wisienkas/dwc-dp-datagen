@@ -322,7 +322,7 @@ public final class SmokeTest {
           .build();
       GeneratedPackage pkg = spec.generate(1);
       Path dir = Files.createTempDirectory("datagen-smoke-csv");
-      pkg.writeTo(dir, new MapDescriptorSerializer());
+      pkg.writeTo(dir, new MapDescriptorSerializer(), "datagen-smoke-csv");
       String csv = Files.readString(dir.resolve("widget.csv"));
       require(csv.contains("\"has, a comma and a \"\"quote\"\"\""),
           "expected RFC4180 quoting, got: " + csv);
@@ -367,7 +367,7 @@ public final class SmokeTest {
   private static Map<String, Object> descriptorOf(GeneratedPackage pkg) {
     try {
       Path dir = Files.createTempDirectory("datagen-smoke-descriptor");
-      pkg.writeTo(dir, new MapDescriptorSerializer());
+      pkg.writeTo(dir, new MapDescriptorSerializer(),  "datagen-smoke-descriptor");
       return JsonSupport.readObject(Files.readString(dir.resolve("datapackage.json")));
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -411,7 +411,7 @@ public final class SmokeTest {
 
   private static String writeAndRead(GeneratedPackage pkg, String label) throws Exception {
     Path dir = Files.createTempDirectory("datagen-smoke-" + label);
-    pkg.writeTo(dir, new MapDescriptorSerializer());
+    pkg.writeTo(dir, new MapDescriptorSerializer(),   "datagen-smoke-" + label);
     StringBuilder sb = new StringBuilder();
     for (String resource : pkg.spec().generationOrder()) {
       sb.append(Files.readString(dir.resolve(resource + ".csv")));

@@ -44,7 +44,7 @@ class PackageWriterTest {
     FakeSerializer fake = new FakeSerializer();
     Path dir = Files.createTempDirectory("datagen-packagewriter-test");
 
-    new PackageWriter(fake).id("test-id").write(samplePackage(), dir);
+    new PackageWriter(fake).id("test-id").name("test").write(samplePackage(), dir);
 
     assertTrue(fake.called, "PackageWriter.write must call the supplied serializer");
     String written = Files.readString(dir.resolve("datapackage.json"));
@@ -55,7 +55,7 @@ class PackageWriterTest {
   @Test
   void mapDescriptorSerializerProducesAValidLookingDescriptor() throws Exception {
     Path dir = Files.createTempDirectory("datagen-packagewriter-test-map");
-    new PackageWriter(new MapDescriptorSerializer()).write(samplePackage(), dir);
+    new PackageWriter(new MapDescriptorSerializer()).name("test").write(samplePackage(), dir);
 
     String written = Files.readString(dir.resolve("datapackage.json"));
     assertTrue(written.contains("\"resources\""), "expected a 'resources' array in the descriptor");
@@ -67,7 +67,7 @@ class PackageWriterTest {
     String lastOutput;
 
     @Override
-    public String serialize(DataPackageSpec spec, String id, String created) {
+    public String serialize(DataPackageSpec spec, String id, String name, String created) {
       called = true;
       lastOutput = "{\"fake\":true,\"id\":\"" + id + "\"}";
       return lastOutput;

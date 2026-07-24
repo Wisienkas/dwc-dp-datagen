@@ -30,7 +30,7 @@ class DwcDpDescriptorSerializerTest {
   }
 
   private Map<String, Object> descriptorOf(GeneratedPackage pkg) {
-    String json = new DwcDpDescriptorSerializer().serialize(pkg.spec(), "test-id", "2026-01-01T00:00:00Z");
+    String json = new DwcDpDescriptorSerializer().serialize(pkg.spec(), "test-id", "test", "2026-01-01T00:00:00Z");
     return JsonSupport.readObject(json);
   }
 

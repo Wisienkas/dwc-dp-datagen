@@ -48,7 +48,7 @@ public final class DwcDpDescriptorSerializer implements DescriptorSerializer {
   private static final ObjectMapper MAPPER = buildMapper();
 
   @Override
-  public String serialize(DataPackageSpec spec, String id, String created) {
+  public String serialize(DataPackageSpec spec, String id, String name, String created) {
     List<ResourceDescriptor> resources = new ArrayList<>();
     for (ResourceSpec resource : spec.resources()) {
       resources.add(resourceDescriptor(spec, resource));
@@ -56,6 +56,7 @@ public final class DwcDpDescriptorSerializer implements DescriptorSerializer {
 
     DataPackageDescriptor descriptor = DataPackageDescriptor.builder()
       .id(id)
+      .name(name)
       .created(created)
       .profile(spec.profileUrl().orElse(null))
       .resources(resources)
